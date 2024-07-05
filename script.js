@@ -97,7 +97,7 @@ function dragended(event, d) {
 }
 
 document.getElementById("addNodeBtn").addEventListener("click", () => {
-  const newNode = { id: nodes.length, group: 1, x: width / 2, y: height / 2 };
+  const newNode = { id: nodes.length ? Math.max(...nodes.map(n => n.id)) + 1 : 0, group: 1, x: width / 2, y: height / 2 };
   nodes.push(newNode);
   restart();
 });
@@ -110,6 +110,35 @@ document.getElementById("addLinkBtn").addEventListener("click", () => {
       restart();
   } else {
       alert("Please select two nodes to create a link.");
+  }
+});
+
+document.getElementById("removeNodeBtn").addEventListener("click", () => {
+  if (selectedNodes.length === 1) {
+      const nodeToRemove = selectedNodes[0];
+      nodes.splice(nodes.indexOf(nodeToRemove), 1);
+      const linksToRemove = links.filter(l => l.source.id === nodeToRemove.id || l.target.id === nodeToRemove.id);
+      linksToRemove.forEach(l => links.splice(links.indexOf(l), 1));
+      selectedNodes = [];
+      restart();
+  } else {
+      alert("Please select a node to remove.");
+  }
+});
+
+document.getElementById("removeLinkBtn").addEventListener("click", () => {
+  if (selectedNodes.length === 2) {
+      const [source, target] = selectedNodes;
+      const linkToRemove = links.find(l => (l.source.id === source.id && l.target.id === target.id) || (l.source.id === target.id && l.target.id === source.id));
+      if (linkToRemove) {
+          links.splice(links.indexOf(linkToRemove), 1);
+          selectedNodes = [];
+          restart();
+      } else {
+          alert("No link exists between the selected nodes.");
+      }
+  } else {
+      alert("Please select two nodes to remove the link between them.");
   }
 });
 
@@ -127,11 +156,42 @@ function selectNode(d) {
 
 function findArticulationPoints() {
   const graph = new Graph(nodes.length);
-  links.forEach(link => {
+  links.filter(link => nodes.some(node => node.id === link.source.id) && nodes.some(node => node.id === link.target.id)).forEach(link => {
       graph.addEdge(link.source.id, link.target.id);
   });
   const articulationPoints = graph.findArticulationPoints();
   node.attr("fill", d => articulationPoints.includes(d.id) ? "#eb4034" : color(d.group));
+  if (articulationPoints.length === 0) {
+      displayMessage("No articulation points found.");
+  } else {
+      removeMessage();
+  }
+}
+
+function displayMessage(message) {
+  let messageDiv = document.getElementById("message");
+  if (!messageDiv) {
+      messageDiv = document.createElement("div");
+      messageDiv.id = "message";
+      messageDiv.style.position = "absolute";
+      messageDiv.style.top = "20px";
+      messageDiv.style.left = "50%";
+      messageDiv.style.transform = "translateX(-50%)";
+      messageDiv.style.padding = "10px";
+      messageDiv.style.backgroundColor = "#f8d7da";
+      messageDiv.style.color = "#721c24";
+      messageDiv.style.border = "1px solid #f5c6cb";
+      messageDiv.style.borderRadius = "5px";
+      document.body.appendChild(messageDiv);
+  }
+  messageDiv.textContent = message;
+}
+
+function removeMessage() {
+  const messageDiv = document.getElementById("message");
+  if (messageDiv) {
+      document.body.removeChild(messageDiv);
+  }
 }
 
 class Graph {
@@ -144,8 +204,10 @@ class Graph {
   }
 
   addEdge(v, w) {
-      this.adjList.get(v).push(w);
-      this.adjList.get(w).push(v);
+      if (this.adjList.has(v) && this.adjList.has(w)) {
+          this.adjList.get(v).push(w);
+          this.adjList.get(w).push(v);
+      }
   }
 
   findArticulationPoints() {

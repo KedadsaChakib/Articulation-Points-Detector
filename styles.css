@@ -20,7 +20,7 @@ h1 {
     margin-left: 10px;
 }
 
-#addNodeBtn, #addLinkBtn, #articulationBtn {
+#addNodeBtn, #addLinkBtn, #removeNodeBtn, #removeLinkBtn, #articulationBtn {
     margin-top: 10px;
 }
 
